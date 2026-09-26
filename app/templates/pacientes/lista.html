@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Pacientes{% endblock %}
+{% block cabecalho %}Pacientes{% endblock %}
+{% block acoes %}
+  <a class="btn btn-primario" href="{{ url_for('pacientes.novo') }}">+ Novo paciente</a>
+{% endblock %}
+
+{% block conteudo %}
+<div class="card">
+  <form class="barra-filtros" method="get">
+    <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nome ou CPF…">
+    <select name="filtro">
+      <option value="ativos" {{ 'selected' if filtro == 'ativos' }}>Ativos</option>
+      <option value="inativos" {{ 'selected' if filtro == 'inativos' }}>Inativos</option>
+      <option value="todos" {{ 'selected' if filtro == 'todos' }}>Todos</option>
+    </select>
+    <button class="btn btn-secundario" type="submit">Buscar</button>
+    {% if q or filtro != 'ativos' %}<a class="btn btn-texto" href="{{ url_for('pacientes.lista') }}">Limpar</a>{% endif %}
+  </form>
+
+  {% if pacientes %}
+  <div class="rolagem-x">
+  <table class="tabela">
+    <thead>
+      <tr>
+        <th>Nome</th><th>CPF</th><th>Telefone</th><th>Contato de segurança</th>
+        <th>Situação</th><th class="col-acoes">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in pacientes %}
+      <tr>
+        <td>
+          <a href="{{ url_for('prontuario.ver', pid=p['id']) }}"><strong>{{ p['nome'] }}</strong></a>
+          {% if p['data_nascimento'] %}<small class="bloco">{{ fmt_data(p['data_nascimento']) }}</small>{% endif %}
+        </td>
+        <td class="tabular">{{ fmt_cpf(p['cpf']) }}</td>
+        <td>{{ p['telefone'] or '—' }}</td>
+        <td>
+          {% if p['seg_nome'] %}
+            {{ p['seg_nome'] }}{% if p['seg_telefone'] %} · {{ p['seg_telefone'] }}{% endif %}
+          {% else %}<span class="suave">—</span>{% endif %}
+        </td>
+         <td>
+          <span class="badge badge-{{ 'realizado' if p['ativo'] else 'cancelado' }}">{{ 'Ativo' if p['ativo'] else 'Inativo' }}</span>
+          {% if p['risco_nome'] %}
+          <span class="badge" style="background: {{ p['risco_cor'] }}22; color: {{ p['risco_cor'] }};">{{ p['risco_nome'] }}</span>
+          {% endif %}
+        </td>
+        <td class="col-acoes">
+          <a class="btn btn-mini" href="{{ url_for('prontuario.ver', pid=p['id']) }}">🔒 Prontuário</a>
+          <a class="btn btn-mini" href="{{ url_for('pacientes.editar', pid=p['id']) }}">✏️ Editar</a>
+          <form method="post" action="{{ url_for('pacientes.alternar', pid=p['id']) }}"
+                onsubmit="return confirm('Alterar a situação deste paciente?');">
+            <button class="btn btn-mini btn-texto" type="submit">{{ 'Desativar' if p['ativo'] else 'Ativar' }}</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+    <p class="vazio">Nenhum paciente encontrado. Cadastre o primeiro! 📋</p>
+  {% endif %}
+</div>
+{% endblock %}

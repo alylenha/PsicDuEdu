@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{{ clinica_nome }}{% endblock %} · PsicoClin</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+{% block head %}{% endblock %}
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-marca">
+      <span class="marca-icone">🧠</span>
+      <div>
+        <strong>PsicoClin</strong>
+        <small>ERP da clínica</small>
+      </div>
+    </div>
+    <nav class="menu">
+      <a href="{{ url_for('dashboard.index') }}" class="{{ 'ativo' if pagina == 'dashboard' }}">📊<span>Dashboard</span></a>
+      <a href="{{ url_for('pacientes.lista') }}" class="{{ 'ativo' if pagina == 'pacientes' }}">👥<span>Pacientes</span></a>
+      <a href="{{ url_for('agenda.calendario') }}" class="{{ 'ativo' if pagina == 'agenda' }}">🗓️<span>Agenda</span></a>
+      <a href="{{ url_for('financeiro.lista') }}" class="{{ 'ativo' if pagina == 'financeiro' }}">💰<span>Financeiro</span></a>
+      <a href="{{ url_for('relatorios.menu') }}" class="{{ 'ativo' if pagina == 'relatorios' }}">📄<span>Relatórios</span></a>
+      <a href="{{ url_for('integracoes.pagina') }}" class="{{ 'ativo' if pagina == 'integracoes' }}">🔗<span>Integrações</span></a>
+      <a href="{{ url_for('backup.pagina') }}" class="{{ 'ativo' if pagina == 'backup' }}">🗄️<span>Backup</span></a>
+    </nav>
+    <div class="sidebar-rodape">
+      <small>100% local · dados só nesta máquina</small>
+    </div>
+  </aside>
+
+  <main class="conteudo">
+    {% with mensagens = get_flashed_messages(with_categories=true) %}
+      {% if mensagens %}
+        <div class="flashes">
+        {% for cat, msg in mensagens %}
+          <div class="flash flash-{{ cat }}">{{ msg }}</div>
+        {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <header class="cabecalho-pagina">
+      <h1>{% block cabecalho %}{% endblock %}</h1>
+      <div class="cabecalho-acoes">{% block acoes %}{% endblock %}</div>
+    </header>
+
+    {% block conteudo %}{% endblock %}
+  </main>
+</div>
+{% block scripts %}{% endblock %}
+<script>
+(function () {
+  var flashes = document.querySelectorAll('.flashes .flash');
+  function remover(el) {
+    el.remove();
+    var box = document.querySelector('.flashes');
+    if (box && !box.children.length) box.remove();
+  }
+  flashes.forEach(function (el, i) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'flash-fechar';
+    btn.setAttribute('aria-label', 'Fechar aviso');
+    btn.textContent = '×';
+    btn.addEventListener('click', function () { remover(el); });
+    el.appendChild(btn);
+    setTimeout(function () {
+      el.classList.add('saindo');
+      setTimeout(function () { remover(el); }, 450);
+    }, 5000 + i * 300);
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+NOTICE — créditos e marcas de terceiros
+=======================================
+
+PsicoClin ERP
+-------------
+Código do projeto: licença MIT (arquivo LICENSE).
+Documentação/textos: Creative Commons Attribution 4.0 (CC BY 4.0).
+
+Design system
+-------------
+A interface segue princípios documentais do Apple Human Interface Guidelines,
+usando como referência o catálogo open source:
+
+    mjmirza/apple-design-system — https://github.com/mjmirza/apple-design-system
+    Documentação sob CC BY 4.0; código das ferramentas sob MIT.
+
+Nenhum arquivo, fonte, ícone ou asset da Apple Inc. é distribuído, re-hospedado
+ou incluído neste projeto. A tipografia usa a pilha de fontes do sistema
+(-apple-system/SF Pro no macOS; Segoe UI no Windows), respeitando as licenças
+de cada plataforma.
+
+Marcas
+------
+Apple®, Mac, macOS, SF Pro e Apple Human Interface Guidelines são marcas da
+Apple Inc., registradas nos EUA e em outros países. Este projeto é independente
+e não possui afiliação, endosso ou patrocínio da Apple Inc.
+
+Google, Google Agenda, Gmail e Google Cloud são marcas da Google LLC. As
+integrações opcionais usam APIs públicas gratuitas conforme os termos do Google.
+
+Bibliotecas
+-----------
+- Flask (BSD-3) — palletsprojects.com
+- cryptography (Apache-2.0/BSD) — cryptography.io
+- Chart.js (MIT) — chartjs.org (incluído em app/static/vendor/ para uso offline)
+- Python Software Foundation License — python.org

@@ -1,0 +1,42 @@
+{% extends "relatorios/base_relatorio.html" %}
+{% block titulo_relatorio %}Não pagas{% endblock %}
+{% block titulo_relatorio_full %}🔔 Sessões realizadas não pagas{% endblock %}
+{% block periodo_relatorio %}Período: {{ fmt_data(de.isoformat()) }} a {{ fmt_data(ate.isoformat()) }}{% endblock %}
+
+{% block corpo_relatorio %}
+{% if linhas %}
+<div class="card">
+  <div class="rolagem-x">
+  <table class="tabela">
+    <thead><tr>
+      <th>Data</th><th>Paciente</th><th>Telefone</th><th>Status</th>
+      <th class="tabular">Valor</th><th class="col-acoes">Baixa</th>
+    </tr></thead>
+    <tbody>
+    {% for a in linhas %}
+      <tr>
+        <td class="tabular">{{ fmt_data(a['data']) }} {{ fmt_hora(a['hora_inicio']) }}</td>
+        <td><a href="{{ url_for('prontuario.ver', pid=a['paciente_id']) }}">{{ a['paciente_nome'] }}</a></td>
+        <td>{{ a['telefone'] or '—' }}</td>
+        <td><span class="badge badge-{{ a['status'] }}">{{ STATUS_LABELS[a['status']] }}</span></td>
+        <td class="tabular">{{ fmt_moeda(a['valor_centavos']) }}</td>
+        <td class="col-acoes">
+          <form method="post" action="{{ url_for('agenda.receber', aid=a['id']) }}">
+            <input type="hidden" name="forma_pagamento" value="PIX">
+            <button class="btn btn-mini" type="submit">💰 Registrar pagamento</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><th colspan="4" class="alinha-direita">Total a receber</th>
+          <th class="tabular cor-despesa">{{ fmt_moeda(total) }}</th><th></th></tr>
+    </tfoot>
+  </table>
+  </div>
+</div>
+{% else %}
+<div class="card"><p class="vazio">Tudo em dia — nenhuma sessão pendente neste período. ✔</p></div>
+{% endif %}
+{% endblock %}

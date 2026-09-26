@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Previsões{% endblock %}
+{% block cabecalho %}Financeiro — Previsões{% endblock %}
+
+{% block conteudo %}
+<nav class="submenu">
+  <a href="{{ url_for('financeiro.lista') }}" class="{{ 'ativo' if aba == 'lancamentos' }}">💰 Lançamentos</a>
+  <a href="{{ url_for('financeiro.previsoes') }}" class="{{ 'ativo' if aba == 'previsoes' }}">📅 Previsões a pagar / a receber</a>
+</nav>
+
+<section class="grade-kpis grade-kpis-3">
+  <div class="card kpi">
+    <span class="kpi-rotulo">A receber (previsto)</span>
+    <span class="kpi-valor cor-receita">{{ fmt_moeda(total_receita) }}</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-rotulo">A pagar (previsto)</span>
+    <span class="kpi-valor cor-despesa">{{ fmt_moeda(total_despesa) }}</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-rotulo">Saldo previsto</span>
+    <span class="kpi-valor">{{ fmt_moeda(total_receita - total_despesa) }}</span>
+  </div>
+</section>
+
+<div class="grade-2 grade-2-desigual">
+  <div class="card">
+    <h2>Nova previsão (manual)</h2>
+    <form method="post" action="{{ url_for('financeiro.previsao_novo') }}">
+      <div class="grade-form">
+        <label class="campo"><span>Tipo *</span>
+          <select name="tipo" required>
+            <option value="receita">💰 A receber</option>
+            <option value="despesa">💸 A pagar</option>
+          </select>
+        </label>
+        <label class="campo"><span>Data prevista *</span>
+          <input type="date" name="data" required>
+        </label>
+        <label class="campo"><span>Valor * <small>(pt-BR)</small></span>
+          <input name="valor" required inputmode="decimal" placeholder="250,00">
+        </label>
+        <label class="campo"><span>Categoria *</span>
+          <input name="categoria" list="cats-prev" required placeholder="Ex.: Aluguel / Sessão">
+          <datalist id="cats-prev">
+            {% for c in categorias %}<option value="{{ c }}"></option>{% endfor %}
+          </datalist>
+        </label>
+        <label class="campo"><span>Paciente (opcional)</span>
+          <select name="paciente_id">
+            <option value="">—</option>
+            {% for p in pacientes %}<option value="{{ p['id'] }}">{{ p['nome'] }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="campo campo-largo"><span>Descrição</span>
+          <input name="descricao" placeholder="Ex.: aluguel de outubro / sessão avulsa">
+        </label>
+      </div>
+      <button class="btn btn-primario" type="submit">Prever</button>
+    </form>
+    <p class="ajuda">O a receber também é gerado automaticamente a partir dos agendamentos com valor.</p>
+  </div>
+
+  <div class="card">
+    <h2>Filtros</h2>
+    <form method="get" class="form-filtros">
+      <label class="campo"><span>De</span><input type="date" name="de" value="{{ de }}"></label>
+      <label class="campo"><span>Até</span><input type="date" name="ate" value="{{ ate }}"></label>
+      <label class="campo"><span>Tipo</span>
+        <select name="tipo">
+          <option value="">Todos</option>
+          <option value="receita" {{ 'selected' if tipo == 'receita' }}>A receber</option>
+          <option value="despesa" {{ 'selected' if tipo == 'despesa' }}>A pagar</option>
+        </select>
+      </label>
+      <label class="campo"><span>Status</span>
+        <select name="status">
+          <option value="">Todos</option>
+          <option value="prevista" {{ 'selected' if status == 'prevista' }}>Previstas</option>
+          <option value="efetivada" {{ 'selected' if status == 'efetivada' }}>Efetivadas</option>
+          <option value="cancelada" {{ 'selected' if status == 'cancelada' }}>Canceladas</option>
+        </select>
+      </label>
+      <label class="campo"><span>Origem</span>
+        <select name="origem">
+          <option value="">Todas</option>
+          <option value="manual" {{ 'selected' if origem == 'manual' }}>Manual</option>
+          <option value="agendamento" {{ 'selected' if origem == 'agendamento' }}>Agenda</option>
+        </select>
+      </label>
+      <button class="btn btn-secundario" type="submit">Aplicar</button>
+      <a class="btn btn-texto" href="{{ url_for('financeiro.previsoes') }}">Limpar</a>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Previsões</h2>
+  {% if itens %}
+  <div class="rolagem-x">
+  <table class="tabela">
+    <thead><tr>
+      <th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Origem</th>
+      <th class="tabular">Valor</th><th>Status</th><th class="col-acoes"></th>
+    </tr></thead>
+    <tbody>
+    {% for p in itens %}
+      <tr>
+        <td class="tabular">{{ fmt_data(p['data_prevista']) }}</td>
+        <td>{{ '💰 A receber' if p['tipo'] == 'receita' else '💸 A pagar' }}</td>
+        <td>{{ p['categoria'] }}</td>
+        <td>{{ p['descricao'] or '—' }}{% if p['paciente_nome'] %} <small class="suave">· {{ p['paciente_nome'] }}</small>{% endif %}</td>
+        <td>{{ '🧾 Agenda' if p['origem'] == 'agendamento' else '✍️ Manual' }}</td>
+        <td class="tabular {{ 'cor-receita' if p['tipo'] == 'receita' else 'cor-despesa' }}">{{ fmt_moeda(p['valor_centavos']) }}</td>
+        <td><span class="badge badge-neutro">{{ p['status'] }}</span></td>
+        <td class="col-acoes">
+          {% if p['status'] == 'prevista' %}
+          <form method="post" action="{{ url_for('financeiro.previsao_efetivar', pid=p['id']) }}" style="display:inline">
+            <select name="forma_pagamento" class="input-mini" required title="Forma de pagamento (obrigatória para efetivar)">
+              <option value="">Pagamento…</option>
+              {% for f in formas %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+            </select>
+            <button class="btn btn-mini btn-primario" type="submit" title="Efetiva e cria o lançamento idêntico">Efetivar</button>
+          </form>
+          <form method="post" action="{{ url_for('financeiro.previsao_cancelar', pid=p['id']) }}" style="display:inline">
+            <button class="btn btn-mini btn-texto" type="submit">Cancelar</button>
+          </form>
+          {% elif p['status'] == 'cancelada' %}
+          <form method="post" action="{{ url_for('financeiro.previsao_cancelar', pid=p['id']) }}" style="display:inline">
+            <button class="btn btn-mini btn-texto" type="submit">Reativar</button>
+          </form>
+          {% else %}
+          <small class="suave">efetivada</small>
+          {% endif %}
+          {% if p['status'] != 'efetivada' %}
+          <form method="post" action="{{ url_for('financeiro.previsao_excluir', pid=p['id']) }}" style="display:inline"
+                onsubmit="return confirm('Excluir esta previsão?');">
+            <button class="btn btn-mini btn-texto" type="submit">Excluir</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="vazio">Nenhuma previsão no filtro atual.</p>
+  {% endif %}
+</div>
+{% endblock %}

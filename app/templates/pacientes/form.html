@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if p else 'Novo' }} paciente{% endblock %}
+{% block cabecalho %}{{ 'Editar paciente' if p else 'Novo paciente' }}{% endblock %}
+{% block acoes %}<a class="btn btn-texto" href="{{ url_for('pacientes.lista') }}">← Voltar</a>{% endblock %}
+
+{% block conteudo %}
+<form method="post" class="card form-card">
+  <h2>Dados pessoais</h2>
+  <div class="grade-form">
+    <label class="campo campo-2">
+      <span>Nome completo *</span>
+      <input name="nome" required maxlength="120" value="{{ p['nome'] if p else '' }}">
+    </label>
+    <label class="campo">
+      <span>CPF * <small>(obrigatório — gera a senha do prontuário)</small></span>
+      <input name="cpf" required inputmode="numeric" placeholder="000.000.000-00"
+             value="{{ fmt_cpf(p['cpf']) if p else '' }}">
+    </label>
+    <label class="campo">
+      <span>Data de nascimento</span>
+      <input type="date" name="data_nascimento" value="{{ p['data_nascimento'] if p else '' }}">
+    </label>
+    <label class="campo">
+      <span>Telefone</span>
+      <input name="telefone" placeholder="(00) 00000-0000" value="{{ p['telefone'] if p else '' }}">
+    </label>
+    <label class="campo">
+      <span>E-mail</span>
+      <input type="email" name="email" value="{{ p['email'] if p else '' }}">
+    </label>
+    <label class="campo campo-largo">
+      <span>Endereço</span>
+      <input name="endereco" value="{{ p['endereco'] if p else '' }}">
+    </label>
+  </div>
+
+  <h2>Contato de segurança</h2>
+  <p class="ajuda">Pessoa de confiança para contatar em caso de emergência ou crise.</p>
+  <div class="grade-form">
+    <label class="campo campo-2">
+      <span>Nome da pessoa</span>
+      <input name="seg_nome" value="{{ p['seg_nome'] if p else '' }}">
+    </label>
+    <label class="campo">
+      <span>Telefone</span>
+      <input name="seg_telefone" placeholder="(00) 00000-0000" value="{{ p['seg_telefone'] if p else '' }}">
+    </label>
+  </div>
+
+  <h2>Classificação de risco clínico</h2>
+  <div class="grade-form">
+    <label class="campo">
+      <span>Risco clínico</span>
+      <select name="risco_id">
+        <option value="">Sem categoria</option>
+        {% for c in categorias_risco %}
+        <option value="{{ c['id'] }}" {{ 'selected' if p and p['risco_id'] == c['id'] }}>
+          {{ c['nome'] }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <h2>Observações</h2>
+  <div class="grade-form">
+    <label class="campo campo-largo">
+      <span>Observações gerais <small>(não criptografadas — evite dados clínicos aqui)</small></span>
+      <textarea name="observacoes" rows="3">{{ p['observacoes'] if p else '' }}</textarea>
+    </label>
+  </div>
+
+  <div class="acoes-form">
+    <button class="btn btn-primario" type="submit">Salvar paciente</button>
+    {% if not p %}
+    <span class="tooltip-ajuda">
+      <button class="btn btn-ajuda" type="button"
+              aria-label="Como funciona a senha do prontuário?">?</button>
+      <span class="tooltip-conteudo" role="tooltip">
+        🔐 Ao salvar, o sistema cria automaticamente a <strong>senha do prontuário</strong>:
+        <strong>4 primeiros dígitos do CPF + 4 últimos</strong> (8 caracteres).
+        Ex.: CPF 123.456.789-00 → senha <code>12347800</code>.
+        Ela será exibida uma única vez após o cadastro.
+      </span>
+    </span>
+    {% endif %}
+    <a class="btn btn-texto" href="{{ url_for('pacientes.lista') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

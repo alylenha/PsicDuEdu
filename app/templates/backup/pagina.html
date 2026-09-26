@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Backup{% endblock %}
+{% block cabecalho %}🗄️ Backup e restauração{% endblock %}
+
+{% block conteudo %}
+<div class="grade-2">
+  <div class="card">
+    <h2>Fazer backup agora</h2>
+    <p class="ajuda">O arquivo <strong>.bak</strong> contém <strong>todos os dados</strong>: banco SQL,
+      anexos criptografados e configurações. Gerado também automaticamente 1× ao dia.
+      {% if ultimo %}Último backup: <strong>{{ ultimo.name }}</strong>{% else %}Nenhum backup ainda.{% endif %}</p>
+    <form method="post" action="{{ url_for('backup.criar') }}">
+      <button class="btn btn-primario" type="submit">📦 Criar backup (.bak)</button>
+    </form>
+    <p class="ajuda">Dica: copie o .bak para um pendrive ou nuvem pessoal — ele é auto-suficiente.</p>
+  </div>
+
+  <div class="card">
+    <h2>Restaurar um .bak</h2>
+    <p class="aviso-senha">⚠️ A restauração <strong>sobrescreve os dados atuais</strong> pelo conteúdo do arquivo.</p>
+    <form method="post" action="{{ url_for('backup.restaurar') }}" enctype="multipart/form-data">
+      <label class="campo"><span>Escolher arquivo .bak</span>
+        <input type="file" name="arquivo" accept=".bak"></label>
+      <button class="btn btn-secundario" type="submit"
+              onclick="return confirm('Restaurar sobrescreve os dados atuais. Continuar?');">
+        ♻️ Restaurar do arquivo</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Backups neste computador (pasta /backups)</h2>
+  {% if backups %}
+  <table class="tabela">
+    <thead><tr><th>Arquivo</th><th class="tabular">Tamanho</th><th class="col-acoes"></th></tr></thead>
+    <tbody>
+    {% for b in backups %}
+      <tr>
+        <td>📦 {{ b.name }}</td>
+        <td class="tabular">{{ '%.1f' % (b.stat().st_size / 1024) }} KB</td>
+        <td class="col-acoes">
+          <a class="btn btn-mini" href="{{ url_for('backup.baixar', nome=b.name) }}">⬇️ Baixar</a>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="vazio">Nenhum backup gerado ainda — clique em “Criar backup”.</p>
+  {% endif %}
+</div>
+{% endblock %}

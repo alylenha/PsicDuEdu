@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Nova sessão{% endblock %}
+{% block cabecalho %}{{ 'Editar sessão' if ag else 'Nova sessão' }}{% endblock %}
+{% block acoes %}<a class="btn btn-texto" href="{{ url_for('agenda.calendario') }}">← Voltar à agenda</a>{% endblock %}
+
+{% block conteudo %}
+<form method="post" class="card form-card">
+  <h2>Dados da sessão</h2>
+  {% if not pacientes %}
+  <div class="caixa-aviso">Cadastre um paciente ativo antes de agendar sessões.</div>
+  {% endif %}
+  <div class="grade-form">
+    <label class="campo campo-2">
+      <span>Paciente *</span>
+      <select name="paciente_id" required>
+        <option value="">Selecione…</option>
+        {% for p in pacientes %}
+        <option value="{{ p['id'] }}" {{ 'selected' if ag and ag['paciente_id'] == p['id'] }}>{{ p['nome'] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="campo">
+      <span>Data *</span>
+      <input type="date" name="data" required value="{{ ag['data'] if ag else '' }}">
+    </label>
+    <label class="campo">
+      <span>Início *</span>
+      <input type="time" name="hora_inicio" required value="{{ fmt_hora(ag['hora_inicio']) if ag else '09:00' }}">
+    </label>
+    <label class="campo">
+      <span>Fim *</span>
+      <input type="time" name="hora_fim" required value="{{ fmt_hora(ag['hora_fim']) if ag else '10:00' }}">
+    </label>
+    <label class="campo">
+      <span>Tipo</span>
+      <input name="tipo" list="tipos" value="{{ ag['tipo'] if ag else 'Sessão' }}">
+      <datalist id="tipos">
+        <option>Sessão</option><option>Primeira consulta</option>
+        <option>Retorno</option><option>Avaliação</option><option>Orientação</option>
+      </datalist>
+    </label>
+    <label class="campo">
+      <span>Profissional</span>
+      <input name="profissional" placeholder="Ex.: Dra. Ana" value="{{ ag['profissional'] if ag else '' }}">
+    </label>
+    <label class="campo">
+      <span>Valor da sessão <small>(pt-BR: 1.234,56)</small></span>
+      <input name="valor" inputmode="decimal" placeholder="250,00"
+             value="{{ '%.2f' % (ag['valor_centavos'] / 100) | replace('.', ',') if ag and ag['valor_centavos'] else '' }}">
+    </label>
+    {% if ag %}
+    <label class="campo">
+      <span>Status</span>
+      <select name="status">
+        {% for chave, rotulo in STATUS_LABELS.items() %}
+        <option value="{{ chave }}" {{ 'selected' if ag['status'] == chave }}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {% endif %}
+    <label class="campo campo-largo">
+      <span>Observações</span>
+      <textarea name="observacoes" rows="2">{{ ag['observacoes'] if ag else '' }}</textarea>
+    </label>
+  </div>
+
+  <div class="caixa-aviso">
+    📧 Se o e-mail (SMTP) estiver configurado em <strong>Integrações</strong>, o paciente receberá
+    automaticamente avisos de marcação, cancelamento e falta. Caso contrário, nada é enviado.
+  </div>
+
+  <div class="acoes-form">
+    <button class="btn btn-primario" type="submit" {{ 'disabled' if not pacientes }}>Salvar sessão</button>
+    <a class="btn btn-texto" href="{{ url_for('agenda.calendario') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

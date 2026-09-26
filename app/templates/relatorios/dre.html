@@ -1,0 +1,44 @@
+{% extends "relatorios/base_relatorio.html" %}
+{% block titulo_relatorio %}DRE{% endblock %}
+{% block titulo_relatorio_full %}📈 Receitas × Despesas — DRE simplificada{% endblock %}
+{% block periodo_relatorio %}Período: {{ fmt_data(de.isoformat()) }} a {{ fmt_data(ate.isoformat()) }}{% endblock %}
+
+{% block corpo_relatorio %}
+<div class="grade-2">
+  <div class="card">
+    <h2>Receitas por categoria</h2>
+    <table class="tabela">
+      <tbody>
+      {% for r in receitas %}
+        <tr><td>{{ r['categoria'] }}</td><td class="tabular cor-receita">{{ fmt_moeda(r['total']) }}</td></tr>
+      {% else %}
+        <tr><td class="vazio">Sem receitas no período.</td></tr>
+      {% endfor %}
+      </tbody>
+      {% if receitas %}
+      <tfoot><tr><th>Total</th><th class="tabular cor-receita">{{ fmt_moeda(total_r) }}</th></tr></tfoot>
+      {% endif %}
+    </table>
+  </div>
+  <div class="card">
+    <h2>Despesas por categoria</h2>
+    <table class="tabela">
+      <tbody>
+      {% for d in despesas %}
+        <tr><td>{{ d['categoria'] }}</td><td class="tabular cor-despesa">{{ fmt_moeda(d['total']) }}</td></tr>
+      {% else %}
+        <tr><td class="vazio">Sem despesas no período.</td></tr>
+      {% endfor %}
+      </tbody>
+      {% if despesas %}
+      <tfoot><tr><th>Total</th><th class="tabular cor-despesa">{{ fmt_moeda(total_d) }}</th></tr></tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+<div class="card resultado-dre">
+  <h2>Resultado do período</h2>
+  <p class="kpi-valor grande {{ 'cor-receita' if resultado >= 0 else 'cor-despesa' }}">{{ fmt_moeda(resultado) }}</p>
+  <p class="ajuda">Receitas {{ fmt_moeda(total_r) }} − Despesas {{ fmt_moeda(total_d) }}</p>
+</div>
+{% endblock %}

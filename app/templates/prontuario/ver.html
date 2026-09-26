@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Prontuário — {{ p['nome'] }}{% endblock %}
+{% block cabecalho %}🔒 Prontuário — {{ p['nome'] }}{% endblock %}
+{% block acoes %}
+  <a class="btn btn-texto" href="{{ url_for('pacientes.lista') }}">← Pacientes</a>
+  <a class="btn btn-secundario" href="{{ url_for('pacientes.editar', pid=p['id']) }}">✏️ Editar cadastro</a>
+{% endblock %}
+
+{% block conteudo %}
+<div class="card ficha-resumo">
+  <div>
+    <span class="kpi-rotulo">CPF</span><strong class="bloco">{{ fmt_cpf(p['cpf']) }}</strong>
+    <span class="kpi-rotulo">Nascimento</span>
+    <strong class="bloco">{{ fmt_data(p['data_nascimento']) or '—' }}
+      {% if fmt_idade(p['data_nascimento']) is not none %}<small>({{ fmt_idade(p['data_nascimento']) }} anos)</small>{% endif %}
+    </strong>
+  </div>
+  <div>
+    <span class="kpi-rotulo">Telefone</span><strong class="bloco">{{ p['telefone'] or '—' }}</strong>
+    <span class="kpi-rotulo">E-mail</span><strong class="bloco">{{ p['email'] or '—' }}</strong>
+  </div>
+  <div>
+    <span class="kpi-rotulo">Contato de segurança</span>
+    <strong class="bloco">{{ p['seg_nome'] or '—' }}{% if p['seg_telefone'] %} · {{ p['seg_telefone'] }}{% endif %}</strong>
+    <span class="kpi-rotulo">Situação</span>
+    <strong class="bloco">{{ 'Ativo' if p['ativo'] else 'Inativo' }}</strong>
+  </div>
+</div>
+
+{% if not aberto %}
+<div class="card card-bloqueio">
+  <div class="cadeado-grande">🔐</div>
+  <h2>Prontuário bloqueado</h2>
+  <p>Digite a <strong>senha exclusiva deste paciente</strong> para acessar evoluções e anexos.</p>
+  <p class="ajuda">Após desbloquear, o prontuário fica aberto por 40 minutos
+     e volta a pedir a senha na próxima abertura.</p>
+  <form method="post" action="{{ url_for('prontuario.desbloquear', pid=p['id']) }}" class="form-bloqueio">
+    <input type="password" name="senha" required minlength="8" maxlength="64"
+           placeholder="Senha do prontuário (8 caracteres)" autocomplete="off">
+    <button class="btn btn-primario" type="submit">Desbloquear</button>
+  </form>
+  <p class="aviso-senha">⚠️ Por segurança, <strong>não existe recuperação de senha</strong> — o conteúdo é criptografado.</p>
+</div>
+
+{% else %}
+<div class="card banner-sessao">
+  <span>🔓 Prontuário aberto — a senha será solicitada novamente em
+    <strong>{{ minutos_restantes }} min</strong> (janela renovada a cada acesso).</span>
+  <form method="post" action="{{ url_for('prontuario.bloquear', pid=p['id']) }}">
+    <button class="btn btn-mini btn-secundario" type="submit">🔒 Bloquear agora</button>
+  </form>
+</div>
+<div class="grade-2 grade-2-desigual">
+  <div class="coluna">
+    <div class="card">
+      <h2>Evoluções e anamneses ({{ evolucoes|length }})</h2>
+      <form method="post" action="{{ url_for('prontuario.nova_evolucao', pid=p['id']) }}" class="form-evolucao">
+        <div class="linha-2">
+          <label class="campo"><span>Data da sessão</span>
+            <input type="date" name="data_sessao" required></label>
+          <label class="campo"><span>Tipo</span>
+            <select name="tipo">
+              <option>Evolução</option><option>Anamnese</option>
+              <option>Encaminhamento</option><option>Relatório</option><option>Outro</option>
+            </select></label>
+        </div>
+        <label class="campo"><span>Conteúdo (será criptografado)</span>
+          <textarea name="conteudo" rows="5" required
+            placeholder="Observações da sessão, hipóteses, encaminhamentos…"></textarea></label>
+        <button class="btn btn-primario" type="submit">Salvar evolução criptografada</button>
+      </form>
+
+      {% for e in evolucoes %}
+      <article class="evolucao">
+        <header>
+          <strong>{{ fmt_data(e['data_sessao']) }}</strong>
+          <span class="badge badge-neutro">{{ e['tipo'] }}</span>
+        </header>
+        <p>{{ e['conteudo'] }}</p>
+      </article>
+      {% else %}
+      <p class="vazio">Nenhuma evolução registrada ainda.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="coluna">
+    <div class="card">
+      <h2>📎 Anexos</h2>
+      <form method="post" action="{{ url_for('prontuario.enviar_anexo', pid=p['id']) }}"
+            enctype="multipart/form-data" class="form-anexo">
+        <input type="file" name="arquivo" required>
+        <button class="btn btn-secundario" type="submit">Enviar e criptografar</button>
+      </form>
+      <ul class="lista-simples">
+        {% for a in anexos %}
+        <li>
+          <span>📄 {{ a['nome_original'] }} <small>({{ (a['tamanho_bytes'] / 1024) | round(1) }} KB)</small></span>
+          <span class="linha-acoes">
+            <a class="btn btn-mini" href="{{ url_for('prontuario.baixar_anexo', pid=p['id'], aid=a['id']) }}">Baixar</a>
+            <form method="post" action="{{ url_for('prontuario.excluir_anexo', pid=p['id'], aid=a['id']) }}"
+                  onsubmit="return confirm('Excluir este anexo?');">
+              <button class="btn btn-mini btn-texto" type="submit">Excluir</button>
+            </form>
+          </span>
+        </li>
+        {% else %}
+        <li class="suave">Nenhum anexo.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>🔑 Trocar senha do prontuário</h2>
+      <p class="ajuda">A nova senha deve ter pelo menos 8 caracteres. Todo o conteúdo será re-criptografado.</p>
+      <form method="post" action="{{ url_for('prontuario.trocar_senha', pid=p['id']) }}">
+        <label class="campo"><span>Senha atual</span>
+          <input type="password" name="senha_atual" required autocomplete="off"></label>
+        <label class="campo"><span>Nova senha (mín. 8)</span>
+          <input type="password" name="nova_senha" required minlength="8" autocomplete="off"></label>
+        <button class="btn btn-secundario" type="submit">Trocar senha</button>
+      </form>
+    </div>
+
+    <form method="post" action="{{ url_for('prontuario.bloquear', pid=p['id']) }}">
+      <button class="btn btn-texto" type="submit">🔒 Bloquear agora (a senha será pedida na próxima abertura)</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

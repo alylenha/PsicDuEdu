@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Relatórios{% endblock %}
+{% block cabecalho %}Relatórios{% endblock %}
+{% block acoes %}<button class="btn btn-secundario" onclick="window.print()">🖨️ Imprimir / PDF</button>{% endblock %}
+
+{% block conteudo %}
+<div class="card">
+  <h2>Período dos relatórios</h2>
+  <form method="get" class="linha-filtros">
+    <label class="campo"><span>De</span><input type="date" name="de" value="{{ de.isoformat() }}"></label>
+    <label class="campo"><span>Até</span><input type="date" name="ate" value="{{ ate.isoformat() }}"></label>
+    <button class="btn btn-secundario" type="submit">Aplicar</button>
+  </form>
+  <p class="ajuda">O período escolhido vale para todos os relatórios abaixo (links já levam as datas).</p>
+</div>
+
+<div class="grade-cards-relatorio">
+  <a class="card card-link" href="{{ url_for('relatorios.faturamento', de=de.isoformat(), ate=ate.isoformat()) }}">
+    <span class="icone-relatorio">💵</span>
+    <h3>Faturamento por período</h3>
+    <p>Todas as receitas e despesas lançadas no período, com totais.</p>
+  </a>
+  <a class="card card-link" href="{{ url_for('relatorios.dre', de=de.isoformat(), ate=ate.isoformat()) }}">
+    <span class="icone-relatorio">📈</span>
+    <h3>Receitas × Despesas (DRE)</h3>
+    <p>DRE simplificada por categoria, com resultado do período.</p>
+  </a>
+  <a class="card card-link" href="{{ url_for('relatorios.atendimentos', de=de.isoformat(), ate=ate.isoformat()) }}">
+    <span class="icone-relatorio">🧑‍⚕️</span>
+    <h3>Atendimentos por paciente</h3>
+    <p>Sessões realizadas e faltas por paciente, valores pagos e a receber.</p>
+  </a>
+  <a class="card card-link" href="{{ url_for('relatorios.nao_pagos', de=de.isoformat(), ate=ate.isoformat()) }}">
+    <span class="icone-relatorio">🔔</span>
+    <h3>Sessões não pagas</h3>
+    <p>Realizadas ou faltas com valor pendente — base para cobrança.</p>
+  </a>
+  <a class="card card-link" href="{{ url_for('relatorios.ficha_paciente') }}">
+    <span class="icone-relatorio">🗂️</span>
+    <h3>Ficha do paciente</h3>
+    <p>Dados cadastrais, contato de segurança e histórico de sessões.</p>
+  </a>
+  <a class="card card-link" href="{{ url_for('relatorios.agenda_dia') }}">
+    <span class="icone-relatorio">🗓️</span>
+    <h3>Agenda do dia</h3>
+    <p>Lista horária das sessões de um dia — imprima e leve para a recepção.</p>
+  </a>
+</div>
+{% endblock %}

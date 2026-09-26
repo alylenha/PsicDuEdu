@@ -1,0 +1,42 @@
+{% extends "relatorios/base_relatorio.html" %}
+{% block titulo_relatorio %}Faturamento{% endblock %}
+{% block titulo_relatorio_full %}💵 Faturamento por período{% endblock %}
+{% block periodo_relatorio %}Período: {{ fmt_data(de.isoformat()) }} a {{ fmt_data(ate.isoformat()) }}{% endblock %}
+
+{% block corpo_relatorio %}
+{% if linhas %}
+<div class="card">
+  <div class="rolagem-x">
+  <table class="tabela">
+    <thead><tr>
+      <th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th>
+      <th>Pagamento</th><th class="tabular">Valor</th>
+    </tr></thead>
+    <tbody>
+      {% for l in linhas %}
+      <tr>
+        <td class="tabular">{{ fmt_data(l['data']) }}</td>
+        <td>{{ 'Receita' if l['tipo'] == 'receita' else 'Despesa' }}</td>
+        <td>{{ l['categoria'] }}</td>
+        <td>{{ l['descricao'] or '—' }}</td>
+        <td>{{ l['forma_pagamento'] or '—' }}</td>
+        <td class="tabular {{ 'cor-receita' if l['tipo'] == 'receita' else 'cor-despesa' }}">
+          {{ ('+ ' if l['tipo'] == 'receita' else '− ') + fmt_moeda(l['valor_centavos']).lstrip('-') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><th colspan="5" class="alinha-direita">Total de receitas</th>
+          <th class="tabular cor-receita">{{ fmt_moeda(receitas) }}</th></tr>
+      <tr><th colspan="5" class="alinha-direita">Total de despesas</th>
+          <th class="tabular cor-despesa">{{ fmt_moeda(despesas) }}</th></tr>
+      <tr><th colspan="5" class="alinha-direita">Resultado</th>
+          <th class="tabular {{ 'cor-receita' if resultado >= 0 else 'cor-despesa' }}">{{ fmt_moeda(resultado) }}</th></tr>
+    </tfoot>
+  </table>
+  </div>
+</div>
+{% else %}
+<div class="card"><p class="vazio">Nenhum lançamento neste período.</p></div>
+{% endif %}
+{% endblock %}

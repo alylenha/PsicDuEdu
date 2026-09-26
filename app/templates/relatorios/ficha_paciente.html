@@ -1,0 +1,69 @@
+{% extends "relatorios/base_relatorio.html" %}
+{% block titulo_relatorio %}Ficha{% endblock %}
+{% block titulo_relatorio_full %}🗂️ Ficha do paciente{% endblock %}
+{% block periodo_relatorio %}Emitida em {{ fmt_data(hoje.isoformat()) }}{% endblock %}
+
+{% block corpo_relatorio %}
+<div class="card">
+  <form method="get" class="linha-filtros">
+    <label class="campo campo-2"><span>Paciente</span>
+      <select name="paciente_id" required>
+        <option value="">Selecione…</option>
+        {% for p in pacientes %}
+        <option value="{{ p['id'] }}" {{ 'selected' if request.args.get('paciente_id')|int == p['id'] }}>{{ p['nome'] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn btn-secundario" type="submit">Gerar ficha</button>
+  </form>
+</div>
+
+{% if p %}
+<div class="card">
+  <h2>{{ p['nome'] }}</h2>
+  <div class="ficha-grade">
+    <div><span class="kpi-rotulo">CPF</span><strong>{{ fmt_cpf(p['cpf']) }}</strong></div>
+    <div><span class="kpi-rotulo">Nascimento</span>
+      <strong>{{ fmt_data(p['data_nascimento']) or '—' }}</strong>
+      {% if fmt_idade(p['data_nascimento']) is not none %}<small>({{ fmt_idade(p['data_nascimento']) }} anos)</small>{% endif %}
+    </div>
+    <div><span class="kpi-rotulo">Telefone</span><strong>{{ p['telefone'] or '—' }}</strong></div>
+    <div><span class="kpi-rotulo">E-mail</span><strong>{{ p['email'] or '—' }}</strong></div>
+    <div class="ficha-largo"><span class="kpi-rotulo">Endereço</span><strong>{{ p['endereco'] or '—' }}</strong></div>
+    <div><span class="kpi-rotulo">Contato de segurança</span>
+      <strong>{{ p['seg_nome'] or '—' }}</strong></div>
+    <div><span class="kpi-rotulo">Telefone do contato</span>
+      <strong>{{ p['seg_telefone'] or '—' }}</strong></div>
+    <div><span class="kpi-rotulo">Situação</span><strong>{{ 'Ativo' if p['ativo'] else 'Inativo' }}</strong></div>
+    <div><span class="kpi-rotulo">Prontuário</span>
+      <strong>{{ n_pront }} evolução(ões) · {{ n_anexos }} anexo(s)</strong>
+      <small class="bloco">Conteúdo protegido por senha do paciente</small></div>
+  </div>
+  {% if p['observacoes'] %}<p class="ajuda"><strong>Observações:</strong> {{ p['observacoes'] }}</p>{% endif %}
+</div>
+
+<div class="card">
+  <h2>Últimas sessões (30 mais recentes)</h2>
+  {% if ags %}
+  <table class="tabela">
+    <thead><tr><th>Data</th><th>Horário</th><th>Tipo</th><th>Status</th><th>Pagamento</th></tr></thead>
+    <tbody>
+    {% for a in ags %}
+      <tr>
+        <td class="tabular">{{ fmt_data(a['data']) }}</td>
+        <td class="tabular">{{ fmt_hora(a['hora_inicio']) }}–{{ fmt_hora(a['hora_fim']) }}</td>
+        <td>{{ a['tipo'] }}</td>
+        <td><span class="badge badge-{{ a['status'] }}">{{ STATUS_LABELS[a['status']] }}</span></td>
+        <td>{{ '✔ pago' if a['pago'] else ('—' if not a['valor_centavos'] else fmt_moeda(a['valor_centavos'])) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="vazio">Este paciente ainda não possui sessões.</p>
+  {% endif %}
+</div>
+{% else %}
+<div class="card"><p class="vazio">Selecione um paciente acima para gerar a ficha.</p></div>
+{% endif %}
+{% endblock %}

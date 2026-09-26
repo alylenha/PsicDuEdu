@@ -1,0 +1,11 @@
+# PsicoClin ERP — dependências (todas gratuitas)
+flask>=3.0
+cryptography>=42
+
+# Opcional — somente para a sincronização completa com o Google Agenda
+# (a instalação básica funciona sem estas; descomente se for usar):
+# google-api-python-client>=2.100
+# google-auth-oauthlib>=1.0
+
+# Somente para desenvolvimento/testes:
+pytest>=8.0

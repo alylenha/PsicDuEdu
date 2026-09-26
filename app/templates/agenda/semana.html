@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Agenda{% endblock %}
+{% block cabecalho %}Agenda — semana de {{ fmt_data(inicio.isoformat()) }}{% endblock %}
+{% block acoes %}    <a class="btn btn-secundario" href="{{ url_for('agenda.exportar_ics', ref=ref.isoformat()) }}">⬇️ Exportar .ics</a>
+  <a class="btn btn-primario" href="{{ url_for('agenda.novo') }}">+ Nova sessão</a>
+{% endblock %}
+
+{% block conteudo %}
+<div class="card barra-navegacao agenda-topo">
+  <form method="get" class="agenda-filtros">
+    <div class="agenda-data">
+      <input type="date" name="ref" value="{{ ref.isoformat() }}" aria-label="Data de referência da semana">
+    </div>
+    <div class="agenda-profissional">
+      {% if profissionais %}
+      <select name="profissional" aria-label="Filtrar por profissional">
+        <option value="">Todos os profissionais</option>
+        {% for pr in profissionais %}
+        <option value="{{ pr }}" {{ 'selected' if pr == profissional }}>{{ pr }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+      {% if pacientes %}
+      <select name="paciente" aria-label="Filtrar por paciente">
+        <option value="">Todos os pacientes</option>
+        {% for pa in pacientes %}
+        <option value="{{ pa['id'] }}" {{ 'selected' if pa['id'] == paciente }}>{{ pa['nome'] }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+      {% if tipos %}
+      <select name="tipo" aria-label="Filtrar por tipo de sessão">
+        <option value="">Todos os tipos</option>
+        {% for t in tipos %}
+        <option value="{{ t }}" {{ 'selected' if t == tipo }}>{{ t }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+      <select name="periodo" aria-label="Filtrar por período do dia">
+        <option value="">Manhã, tarde e noite</option>
+        <option value="manha" {{ 'selected' if periodo == 'manha' }}>Manhã</option>
+        <option value="tarde" {{ 'selected' if periodo == 'tarde' }}>Tarde</option>
+        <option value="noite" {{ 'selected' if periodo == 'noite' }}>Noite</option>
+      </select>
+      <button class="btn btn-secundario" type="submit">Ir</button>
+      {% if filtros_ativos %}
+      <a class="btn btn-texto" href="{{ url_for('agenda.calendario', ref=ref.isoformat()) }}">Limpar filtros</a>
+      {% endif %}
+    </div>
+  </form>
+  <nav class="agenda-navegacao" aria-label="Navegação entre semanas">
+    <a class="btn btn-secundario" href="{{ link_anterior }}">← Semana anterior</a>
+    <a class="btn btn-secundario" href="{{ link_hoje }}">Hoje</a>
+    <a class="btn btn-secundario" href="{{ link_seguinte }}">Próxima semana →</a>
+  </nav>
+</div>
+
+<div class="grade-semana">
+  {% for d in dias %}
+  <div class="card dia {{ 'dia-hoje' if d.isoformat() == hoje_iso else '' }}">
+    <header class="dia-cabecalho">
+      <strong>{{ ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'][loop.index0] }}</strong>
+      <span class="dia-numero">{{ '%02d' % d.day }}/{{ '%02d' % d.month }}</span>
+    </header>
+    {% for a in por_dia[d.isoformat()] %}
+    <div class="compromisso status-borda-{{ a['status'] }}">
+      <div class="compromisso-hora">{{ fmt_hora(a['hora_inicio']) }}–{{ fmt_hora(a['hora_fim']) }}</div>
+      <a class="compromisso-nome" href="{{ url_for('prontuario.ver', pid=a['paciente_id']) }}">{{ a['paciente_nome'] }}</a>
+      <div class="compromisso-detalhe">
+        <span class="badge badge-{{ a['status'] }}">{{ STATUS_LABELS[a['status']] }}</span>
+      </div>
+      <details class="compromisso-acoes">
+        <summary>⋯</summary>
+        <div class="menu-acoes">
+          <a href="{{ url_for('agenda.editar', aid=a['id']) }}">✏️ Editar</a>
+          {% if not a['pago'] and a['valor_centavos'] %}
+          <form method="post" action="{{ url_for('agenda.receber', aid=a['id']) }}">
+            <input type="hidden" name="forma_pagamento" value="PIX">
+            <button type="submit">💰 Registrar pagamento</button>
+          </form>
+          {% endif %}
+          {% if a['status'] in ('agendado','confirmado') %}
+          <form method="post" action="{{ url_for('agenda.status', aid=a['id']) }}">
+            <input type="hidden" name="status" value="realizado">
+            <button type="submit">🟢 Realizado</button>
+          </form>
+          <form method="post" action="{{ url_for('agenda.status', aid=a['id']) }}"
+                onsubmit="return confirm('Registrar falta? A clínica será avisada por e-mail (se configurado).');">
+            <input type="hidden" name="status" value="faltou">
+            <button type="submit">⚠️ Faltou</button>
+          </form>
+          <form method="post" action="{{ url_for('agenda.status', aid=a['id']) }}"
+                onsubmit="return confirm('Cancelar esta sessão?');">
+            <input type="hidden" name="status" value="cancelado">
+            <button type="submit">✖️ Cancelada</button>
+          </form>
+          {% endif %}
+        </div>
+      </details>
+    </div>
+    {% else %}
+    <p class="vazio vazio-dia">—</p>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

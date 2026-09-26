@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Relatório{% endblock %}
+{% block cabecalho %}{% block titulo_relatorio %}{% endblock %}{% endblock %}
+{% block acoes %}
+  <button class="btn btn-secundario" onclick="window.print()">🖨️ Imprimir / PDF</button>
+  <a class="btn btn-texto" href="{{ url_for('relatorios.menu') }}">← Relatórios</a>
+{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-relatorio">
+  <h2>{% block titulo_relatorio_full %}{% endblock %}</h2>
+  <p>{% block periodo_relatorio %}{% endblock %}</p>
+</div>
+{% block corpo_relatorio %}{% endblock %}
+{% endblock %}

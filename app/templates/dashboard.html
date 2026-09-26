@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block cabecalho %}Dashboard{% endblock %}
+{% block acoes %}
+  <a class="btn btn-secundario" href="{{ url_for('agenda.novo') }}">+ Nova sessão</a>
+  <a class="btn btn-primario" href="{{ url_for('pacientes.novo') }}">+ Novo paciente</a>
+{% endblock %}
+
+{% block conteudo %}
+<div class="card barra-navegacao">
+  <form method="get" class="linha-filtros">
+    <label class="campo"><span>Competência</span>
+      <input type="month" name="comp" value="{{ comp }}">
+    </label>
+    <label class="campo"><span>De</span>
+      <input type="date" name="de" value="{{ de }}">
+    </label>
+    <label class="campo"><span>Até</span>
+      <input type="date" name="ate" value="{{ ate }}">
+    </label>
+    <button class="btn btn-secundario" type="submit">Aplicar</button>
+    <a class="btn btn-texto" href="{{ url_for('dashboard.index') }}">Limpar</a>
+    {% if modo == 'intervalo' %}
+    <small class="suave">Intervalo: {{ periodo_txt }}</small>
+    {% else %}
+    <small class="suave">Competência: {{ periodo_txt }}</small>
+    {% endif %}
+  </form>
+</div>
+
+<section class="grade-kpis grade-kpis-7">
+  <div class="card kpi">
+    <span class="kpi-rotulo">Pacientes ativos</span>
+    <span class="kpi-valor">{{ kpi_pacientes }}</span>
+    <span class="kpi-nota">cadastrados na clínica</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-rotulo">Atendimentos hoje</span>
+    <span class="kpi-valor">{{ kpi_hoje }}</span>
+    <span class="kpi-nota">{{ fmt_data(hoje.isoformat()) }}</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-rotulo">Atendimentos no período</span>
+    <span class="kpi-valor">{{ kpi_mes }}</span>
+    <span class="kpi-nota">{{ periodo_txt }} · não cancelados</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-rotulo">Ticket médio</span>
+    <span class="kpi-valor">{{ fmt_moeda(ticket) }}</span>
+    <span class="kpi-nota">por sessão realizada</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-rotulo">Receita no período</span>
+    <span class="kpi-valor cor-receita">{{ fmt_moeda(rec_mes) }}</span>
+    <span class="kpi-nota">{{ periodo_txt }}</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-rotulo">Despesas no período</span>
+    <span class="kpi-valor cor-despesa">{{ fmt_moeda(des_mes) }}</span>
+    <span class="kpi-nota">{{ periodo_txt }}</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-rotulo">Resultado no período</span>
+    <span class="kpi-valor {{ 'cor-receita' if resultado_mes >= 0 else 'cor-despesa' }}">{{ fmt_moeda(resultado_mes) }}</span>
+    <span class="kpi-nota">receitas − despesas</span>
+  </div>
+</section>
+
+<div class="grade-2">
+  <div class="card">
+    <h2>Receitas × Despesas — últimos 6 meses</h2>
+    <div class="grafico-altura"><canvas id="grafRecDesp"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>Atendimentos por mês</h2>
+    <div class="grafico-altura"><canvas id="grafAtend"></canvas></div>
+  </div>
+</div>
+
+<div class="grade-2 grade-2-desigual">
+  <div class="card">
+    <h2>{{ agenda_titulo }}</h2>
+    {% if agenda_hoje %}
+    <table class="tabela">
+      <thead><tr><th>Hora</th><th>Paciente</th><th>Tipo</th><th>Status</th><th>Valor</th></tr></thead>
+      <tbody>
+      {% for a in agenda_hoje %}
+        <tr>
+          <td class="tabular">{{ fmt_hora(a['hora_inicio']) }}–{{ fmt_hora(a['hora_fim']) }}</td>
+          <td><a href="{{ url_for('prontuario.ver', pid=a['paciente_id']) }}">{{ a['paciente_nome'] }}</a></td>
+          <td>{{ a['tipo'] }}</td>
+          <td><span class="badge badge-{{ a['status'] }}">{{ STATUS_ICONS[a['status']] }} {{ STATUS_LABELS[a['status']] }}</span></td>
+          <td class="tabular">{{ fmt_moeda(a['valor_centavos']) if a['valor_centavos'] else '—' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p class="vazio">Nenhuma sessão no período. 🌤️</p>
+    {% endif %}
+  </div>
+  <div class="coluna">
+    <div class="card">
+      <h2>Status da agenda ({{ periodo_txt }})</h2>
+      <div class="grafico-altura grafico-pequeno"><canvas id="grafStatus"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Risco clínico (ativos)</h2>
+      {% if risco_dist %}
+      <div class="grafico-altura grafico-pequeno"><canvas id="grafRisco"></canvas></div>
+      <p class="ajuda">{{ risco_total }} paciente(s) classificado(s) de {{ kpi_pacientes }} ativo(s).</p>
+      {% else %}
+      <p class="vazio">Nenhum paciente ativo classificado.</p>
+      {% endif %}
+    </div>
+    <div class="card">
+      <h2>🎂 Aniversariantes de {{ mes_aniversario }}</h2>
+      {% if aniversariantes %}
+        <ul class="lista-simples">
+        {% for p in aniversariantes %}
+          <li><strong>{{ p['nome'] }}</strong>
+            <small>dia {{ (p['data_nascimento'] or '')[8:10] }}</small></li>
+        {% endfor %}
+        </ul>
+      {% else %}
+        <p class="vazio">Nenhum aniversariante este mês.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+  if (typeof Chart === 'undefined') return;
+  var estilo = getComputedStyle(document.documentElement);
+  var corTexto = estilo.getPropertyValue('--texto-suave').trim() || '#8A8177';
+  var corGrade = estilo.getPropertyValue('--linha').trim() || '#E7E0D6';
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  Chart.defaults.color = corTexto;
+
+  new Chart(document.getElementById('grafRecDesp'), {
+    type: 'bar',
+    data: {
+      labels: {{ labels_6m | tojson }},
+      datasets: [
+        { label: 'Receitas', data: {{ receitas_6m | tojson }},
+          backgroundColor: '#7C9885', borderRadius: 8 },
+        { label: 'Despesas', data: {{ despesas_6m | tojson }},
+          backgroundColor: '#C6938B', borderRadius: 8 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } },
+      scales: {
+        y: { ticks: { callback: v => 'R$ ' + v.toLocaleString('pt-BR') },
+             grid: { color: corGrade } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('grafAtend'), {
+    type: 'line',
+    data: {
+      labels: {{ labels_6m | tojson }},
+      datasets: [{ label: 'Atendimentos', data: {{ atend_6m | tojson }},
+        borderColor: '#8A7BA5', backgroundColor: 'rgba(138,123,165,.15)',
+        fill: true, tension: .35, borderRadius: 8 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: corGrade } },
+                x: { grid: { display: false } } }
+    }
+  });
+
+  new Chart(document.getElementById('grafStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: {{ status_mes | map(attribute='status') | list | map('capitalize') | list | tojson }},
+      datasets: [{ data: {{ status_mes | map(attribute='n') | list | tojson }},
+        backgroundColor: ['#8A7BA5', '#7C9885', '#D9CDBD', '#C6938B', '#B9B3A8'],
+        borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      cutout: '62%', plugins: { legend: { position: 'bottom' } } }
+  });
+
+  var grafRiscoEl = document.getElementById('grafRisco');
+  if (grafRiscoEl) {
+    new Chart(grafRiscoEl, {
+      type: 'doughnut',
+      data: {
+        labels: {{ risco_dist | map(attribute='nome') | list | tojson }},
+        datasets: [{ data: {{ risco_dist | map(attribute='n') | list | tojson }},
+          backgroundColor: {{ risco_dist | map(attribute='cor') | list | tojson }},
+          borderWidth: 0 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false,
+        cutout: '62%', plugins: { legend: { position: 'bottom' } } }
+    });
+  }
+});
+</script>
+{% endblock %}

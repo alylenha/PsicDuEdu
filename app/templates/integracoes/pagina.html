@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Integrações{% endblock %}
+{% block cabecalho %}🔗 Integrações opcionais{% endblock %}
+
+{% block conteudo %}
+<div class="caixa-aviso">
+  Tudo aqui é <strong>opcional e gratuito</strong>. Sem configurar nada, o sistema funciona 100% offline —
+  nenhum dado sai desta máquina.
+</div>
+
+<div class="grade-2 grade-2-desigual">
+  <div class="card">
+    <h2>📧 Avisos por e-mail (SMTP)</h2>
+    <p class="ajuda">Envia automaticamente avisos de sessão <strong>marcada, cancelada e falta</strong> para o
+      paciente e/ou a clínica. Use uma <strong>senha de app</strong> (Gmail: conta → Segurança → Senhas de app;
+      Outlook: idem). A senha fica salva apenas neste computador.</p>
+    <form method="post" action="{{ url_for('integracoes.salvar_email') }}">
+      <div class="grade-form">
+        <label class="campo"><span>Servidor SMTP</span>
+          <input name="smtp_host" placeholder="smtp.gmail.com" value="{{ cfg.get('smtp_host','') }}"></label>
+        <label class="campo"><span>Porta</span>
+          <input name="smtp_porta" placeholder="587" value="{{ cfg.get('smtp_porta','') }}"></label>
+        <label class="campo"><span>Usuário (seu e-mail)</span>
+          <input name="smtp_usuario" value="{{ cfg.get('smtp_usuario','') }}"></label>
+        <label class="campo"><span>Senha de app</span>
+          <input type="password" name="smtp_senha" value="{{ cfg.get('smtp_senha','') }}"></label>
+        <label class="campo"><span>TLS (587 = 1; SSL 465 = 0)</span>
+          <select name="smtp_tls">
+            <option value="1" {{ 'selected' if cfg.get('smtp_tls','1') == '1' }}>STARTTLS (porta 587)</option>
+            <option value="0" {{ 'selected' if cfg.get('smtp_tls','1') == '0' }}>SSL direto (porta 465)</option>
+          </select></label>
+        <label class="campo"><span>E-mail da clínica (recebe cópia dos avisos)</span>
+          <input name="avisos_email_clinica" value="{{ cfg.get('avisos_email_clinica','') }}"></label>
+        <label class="campo"><span>Nome da clínica</span>
+          <input name="clinica_nome" value="{{ cfg.get('clinica_nome','PsicoClin ERP') }}"></label>
+        <label class="campo"><span>Endereço da clínica (usado no Google Agenda)</span>
+          <input name="clinica_endereco" value="{{ cfg.get('clinica_endereco','') }}"></label>
+        <label class="campo campo-largo linha-check">
+          <input type="checkbox" name="avisos_email_paciente_falta" value="1"
+                 {{ 'checked' if cfg.get('avisos_email_paciente_falta') == '1' }}>
+          <span>Enviar aviso de falta também para o paciente</span>
+        </label>
+      </div>
+      <button class="btn btn-primario" type="submit">Salvar e-mail</button>
+    </form>
+
+    <hr class="separador">
+    <h3>Testar envio</h3>
+    <form method="post" action="{{ url_for('integracoes.teste_email') }}" class="linha-filtros">
+      <input name="destino" placeholder="e-mail para receber o teste"
+             value="{{ cfg.get('avisos_email_clinica','') }}">
+      <button class="btn btn-secundario" type="submit">Enviar teste</button>
+    </form>
+    <p class="ajuda">Estado: {{ '✔ configurado' if smtp_ok else '✖ não configurado (avisos desligados)' }}</p>
+  </div>
+
+  <div class="coluna">
+    <div class="card">
+      <h2>🗓️ Google Agenda — sem configuração</h2>
+      <p class="ajuda">Funciona de imediato, sem conta de desenvolvedor:</p>
+      <ul class="lista-simples">
+        <li>Botão <strong>“Exportar .ics”</strong> na Agenda — importa ou assina no Google/Apple/Outlook.</li>
+        <li><a href="{{ url_for('integracoes.baixar_ics') }}">⬇️ Baixar próximos 60 dias (.ics)</a></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>🔄 Google Agenda — sincronização completa (opcional)</h2>
+      <p class="ajuda">Espelha cada sessão na sua agenda do Google. Requer credenciais OAuth gratuitas:
+        console.cloud.google.com → criar projeto → ativar “Google Calendar API” → criar
+        <em>ID do cliente OAuth (aplicativo da Web)</em> com URI de redirecionamento
+        <code>http://127.0.0.1:5050/integracoes/google/callback</code>.</p>
+      <form method="post" action="{{ url_for('integracoes.salvar_google') }}">
+        <label class="campo"><span>Client ID</span>
+          <input name="google_client_id" value="{{ cfg.get('google_client_id','') }}"></label>
+        <label class="campo"><span>Client Secret</span>
+          <input type="password" name="google_client_secret" value="{{ cfg.get('google_client_secret','') }}"></label>
+        <label class="campo"><span>ID da agenda (vazio = principal)</span>
+          <input name="google_calendar_id" value="{{ cfg.get('google_calendar_id','') }}"></label>
+        <button class="btn btn-secundario" type="submit">Salvar credenciais</button>
+      </form>
+      <div class="linha-acoes">
+        <a class="btn btn-primario" href="{{ url_for('integracoes.google_conectar') }}">Conectar com o Google</a>
+        <form method="post" action="{{ url_for('integracoes.google_teste') }}">
+          <button class="btn btn-secundario" type="submit">Sincronizar próximo evento (teste)</button>
+        </form>
+        {% if google_ok %}
+        <form method="post" action="{{ url_for('integracoes.google_desconectar') }}"
+              onsubmit="return confirm('Desconectar o Google Agenda?');">
+          <button class="btn btn-texto" type="submit">Desconectar</button>
+        </form>
+        {% endif %}
+      </div>
+      <p class="ajuda">Estado: {{ '✔ conectado' if google_ok else ('credenciais salvas — falta conectar' if google_creds else '✖ não configurado') }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

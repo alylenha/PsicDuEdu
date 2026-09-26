@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Risco clínico{% endblock %}
+{% block cabecalho %}Configurações — Risco clínico{% endblock %}
+{% block acoes %}
+  <a class="btn btn-texto" href="{{ url_for('integracoes.pagina') }}">← Integrações</a>
+{% endblock %}
+
+{% block conteudo %}
+<div class="grade-2 grade-2-desigual">
+  <div class="card">
+    <h2>Nova categoria</h2>
+    <form method="post" action="{{ url_for('integracoes.risco_categoria_nova') }}">
+      <div class="grade-form">
+        <label class="campo"><span>Nome *</span>
+          <input name="nome" required maxlength="40" placeholder="Ex.: Baixo, Médio, Alto, Crítico">
+        </label>
+        <label class="campo"><span>Cor</span>
+          <input name="cor" type="color" value="#8A8177">
+        </label>
+        <label class="campo"><span>Ordem</span>
+          <input name="ordem" type="number" value="0">
+        </label>
+      </div>
+      <button class="btn btn-primario" type="submit">Criar categoria</button>
+    </form>
+    <p class="ajuda">A classificação é atribuída manualmente a cada paciente no cadastro/edição.</p>
+  </div>
+
+  <div class="card">
+    <h2>Categorias</h2>
+    {% if cats %}
+    <div class="rolagem-x">
+    <table class="tabela">
+      <thead><tr>
+        <th>Nome</th><th>Cor</th><th class="tabular">Ordem</th>
+        <th class="tabular">Pacientes</th><th class="col-acoes"></th>
+      </tr></thead>
+      <tbody>
+      {% for c in cats %}
+        <tr>
+          <td><span class="badge" style="background: {{ c['cor'] }}22; color: {{ c['cor'] }};">{{ c['nome'] }}</span></td>
+          <td class="tabular">{{ c['cor'] }}</td>
+          <td class="tabular">{{ c['ordem'] }}</td>
+          <td class="tabular">{{ c['n_pacientes'] }}</td>
+          <td class="col-acoes">
+            <details class="detalhe-acao">
+              <summary class="btn btn-mini btn-texto">Editar</summary>
+              <form method="post" action="{{ url_for('integracoes.risco_categoria_editar', cid=c['id']) }}"
+                    class="form-editar-cat">
+                <label class="campo"><span>Nome</span>
+                  <input name="nome" required maxlength="40" value="{{ c['nome'] }}">
+                </label>
+                <label class="campo"><span>Cor</span>
+                  <input name="cor" type="color" value="{{ c['cor'] }}">
+                </label>
+                <label class="campo"><span>Ordem</span>
+                  <input name="ordem" type="number" value="{{ c['ordem'] }}">
+                </label>
+                <button class="btn btn-mini btn-primario" type="submit">Salvar</button>
+              </form>
+            </details>
+            <form method="post" action="{{ url_for('integracoes.risco_categoria_excluir', cid=c['id']) }}"
+                  onsubmit="return confirm('Excluir esta categoria? Pacientes ficarão sem classificação.');">
+              <button class="btn btn-mini btn-texto" type="submit">Excluir</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="vazio">Nenhuma categoria cadastrada.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

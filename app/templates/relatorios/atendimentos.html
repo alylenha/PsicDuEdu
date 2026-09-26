@@ -1,0 +1,32 @@
+{% extends "relatorios/base_relatorio.html" %}
+{% block titulo_relatorio %}Atendimentos{% endblock %}
+{% block titulo_relatorio_full %}🧑‍⚕️ Atendimentos por paciente{% endblock %}
+{% block periodo_relatorio %}Período: {{ fmt_data(de.isoformat()) }} a {{ fmt_data(ate.isoformat()) }} — sessões realizadas e faltas{% endblock %}
+
+{% block corpo_relatorio %}
+{% if linhas %}
+<div class="card">
+  <div class="rolagem-x">
+  <table class="tabela">
+    <thead><tr>
+      <th>Paciente</th><th class="tabular">Sessões</th><th class="tabular">Faltas</th>
+      <th class="tabular">Recebido</th><th class="tabular">A receber</th>
+    </tr></thead>
+    <tbody>
+    {% for l in linhas %}
+      <tr>
+        <td><a href="{{ url_for('prontuario.ver', pid=l['paciente_id']) }}">{{ l['nome'] }}</a></td>
+        <td class="tabular">{{ l['sessoes'] }}</td>
+        <td class="tabular">{{ l['faltas'] or 0 }}</td>
+        <td class="tabular cor-receita">{{ fmt_moeda(l['pago_centavos'] or 0) }}</td>
+        <td class="tabular cor-despesa">{{ fmt_moeda(l['a_receber_centavos'] or 0) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% else %}
+<div class="card"><p class="vazio">Nenhum atendimento (realizado ou falta) neste período.</p></div>
+{% endif %}
+{% endblock %}

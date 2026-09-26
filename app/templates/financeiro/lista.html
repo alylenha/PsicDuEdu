@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Financeiro{% endblock %}
+{% block cabecalho %}Financeiro{% endblock %}
+
+{% block conteudo %}
+<nav class="submenu">
+  <a href="{{ url_for('financeiro.lista') }}" class="{{ 'ativo' if aba == 'lancamentos' }}">💰 Lançamentos</a>
+  <a href="{{ url_for('financeiro.previsoes') }}" class="{{ 'ativo' if aba == 'previsoes' }}">📅 Previsões a pagar / a receber</a>
+</nav>
+
+<section class="grade-kpis grade-kpis-3">
+  <div class="card kpi">
+    <span class="kpi-rotulo">Receitas (filtro atual)</span>
+    <span class="kpi-valor cor-receita">{{ fmt_moeda(receitas) }}</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-rotulo">Despesas (filtro atual)</span>
+    <span class="kpi-valor cor-despesa">{{ fmt_moeda(despesas) }}</span>
+  </div>
+  <div class="card kpi">
+    <span class="kpi-rotulo">Resultado</span>
+    <span class="kpi-valor {{ 'cor-receita' if resultado >= 0 else 'cor-despesa' }}">{{ fmt_moeda(resultado) }}</span>
+  </div>
+</section>
+
+<div class="grade-2 grade-2-desigual">
+  <div class="card">
+    <h2>{{ 'Editar lançamento' if editando else 'Novo lançamento' }}</h2>
+    {% if editando %}
+    <form id="form-editar-lancamento" method="post" action="{{ url_for('financeiro.editar', lid=editando['id']) }}">
+      <div class="grade-form">
+        <label class="campo"><span>Tipo *</span>
+          <select name="tipo" required>
+            <option value="receita" {{ 'selected' if editando['tipo'] == 'receita' }}>💰 Receita</option>
+            <option value="despesa" {{ 'selected' if editando['tipo'] == 'despesa' }}>💸 Despesa</option>
+          </select>
+        </label>
+        <label class="campo"><span>Data *</span>
+          <input type="date" name="data" required value="{{ editando['data'] }}">
+        </label>
+        <label class="campo"><span>Valor * <small>(pt-BR)</small></span>
+          <input name="valor" required inputmode="decimal" placeholder="250,00" value="{{ fmt_valor(editando['valor_centavos']) }}">
+        </label>
+        <label class="campo"><span>Categoria *</span>
+          <input name="categoria" list="cats" required placeholder="Ex.: Sessão" value="{{ editando['categoria'] }}">
+          <datalist id="cats">
+            {% for c in categorias %}<option value="{{ c }}"></option>{% endfor %}
+          </datalist>
+        </label>
+        <label class="campo"><span>Forma de pagamento</span>
+          <select name="forma_pagamento">
+            <option value=""></option>
+            {% for f in formas %}<option value="{{ f }}" {{ 'selected' if editando['forma_pagamento'] == f }}>{{ f }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="campo campo-largo"><span>Descrição</span>
+          <input name="descricao" placeholder="Ex.: Sessão de Maria / aluguel de setembro" value="{{ editando['descricao'] }}">
+        </label>
+      </div>
+      <button class="btn btn-primario" type="submit">Salvar alterações</button>
+      <a class="btn btn-texto" href="{{ url_for('financeiro.lista', pagina=pag, por_pagina=por_pagina, de=de, ate=ate, tipo=tipo, categoria=categoria) }}">Cancelar edição</a>
+    </form>
+    {% else %}
+    <form id="form-lancamento" method="post" action="{{ url_for('financeiro.novo') }}">
+      <input type="hidden" name="previsao_id" id="previsao_id" value="">
+      <div class="grade-form">
+        <label class="campo"><span>Tipo *</span>
+          <select name="tipo" id="lanc-tipo" required>
+            <option value="receita">💰 Receita</option>
+            <option value="despesa">💸 Despesa</option>
+          </select>
+        </label>
+        <label class="campo"><span>Data *</span>
+          <input type="date" name="data" id="lanc-data" required>
+        </label>
+        <label class="campo"><span>Valor * <small>(pt-BR)</small></span>
+          <input name="valor" id="lanc-valor" required inputmode="decimal" placeholder="250,00">
+        </label>
+        <label class="campo"><span>Categoria *</span>
+          <input name="categoria" list="cats" required placeholder="Ex.: Sessão">
+          <datalist id="cats">
+            {% for c in categorias %}<option value="{{ c }}"></option>{% endfor %}
+          </datalist>
+        </label>
+        <label class="campo"><span>Forma de pagamento</span>
+          <select name="forma_pagamento">
+            <option value=""></option>
+            {% for f in formas %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="campo campo-largo"><span>Descrição</span>
+          <input name="descricao" placeholder="Ex.: Sessão de Maria / aluguel de setembro">
+        </label>
+      </div>
+      <button class="btn btn-primario" type="submit">Lançar</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Filtros</h2>
+    <form method="get" class="form-filtros">
+      <label class="campo"><span>De</span><input type="date" name="de" value="{{ de }}"></label>
+      <label class="campo"><span>Até</span><input type="date" name="ate" value="{{ ate }}"></label>
+      <label class="campo"><span>Tipo</span>
+        <select name="tipo">
+          <option value="">Todos</option>
+          <option value="receita" {{ 'selected' if tipo == 'receita' }}>Receitas</option>
+          <option value="despesa" {{ 'selected' if tipo == 'despesa' }}>Despesas</option>
+        </select>
+      </label>
+      <label class="campo"><span>Categoria</span>
+        <select name="categoria">
+          <option value="">Todas</option>
+          {% for c in categorias %}
+          <option value="{{ c }}" {{ 'selected' if c == categoria }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn btn-secundario" type="submit">Aplicar</button>
+      <a class="btn btn-texto" href="{{ url_for('financeiro.lista') }}">Limpar</a>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="linha-botoes" style="justify-content: space-between; align-items: center;">
+    <h2 style="margin: 0;">Lançamentos</h2>
+    <form method="get" class="linha-filtros">
+      <input type="hidden" name="de" value="{{ de }}">
+      <input type="hidden" name="ate" value="{{ ate }}">
+      <input type="hidden" name="tipo" value="{{ tipo }}">
+      <input type="hidden" name="categoria" value="{{ categoria }}">
+      <label class="campo"><span>Por página</span>
+        <select name="por_pagina" onchange="this.form.submit()">
+          {% for op in ['20', '50', '100', 'tudo'] %}
+          <option value="{{ op }}" {{ 'selected' if por_pagina == op }}>{{ 'Tudo' if op == 'tudo' else op }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </form>
+  </div>
+  {% if lancamentos %}
+  <div class="rolagem-x">
+  <table class="tabela">
+    <thead><tr>
+      <th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th>
+      <th class="tabular">Valor</th><th>Pagamento</th><th class="col-acoes"></th>
+    </tr></thead>
+    <tbody>
+    {% for l in lancamentos %}
+      <tr>
+        <td class="tabular">{{ fmt_data(l['data']) }}</td>
+        <td>{{ '💰 Receita' if l['tipo'] == 'receita' else '💸 Despesa' }}</td>
+        <td>{{ l['categoria'] }}</td>
+        <td>{{ l['descricao'] or '—' }}</td>
+        <td class="tabular {{ 'cor-receita' if l['tipo'] == 'receita' else 'cor-despesa' }}">
+          {{ ('+' if l['tipo'] == 'receita' else '−') + fmt_moeda(l['valor_centavos']).lstrip('-') }}</td>
+        <td>{{ l['forma_pagamento'] or '—' }}</td>
+        <td class="col-acoes">
+          <a class="btn btn-mini btn-texto" href="{{ url_for('financeiro.lista', editar=l['id'], pagina=pag, por_pagina=por_pagina, de=de, ate=ate, tipo=tipo, categoria=categoria) }}">Editar</a>
+          <form method="post" action="{{ url_for('financeiro.excluir', lid=l['id']) }}"
+                onsubmit="return confirm('Excluir este lançamento?');">
+            <button class="btn btn-mini btn-texto" type="submit">Excluir</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if por_pagina != 'tudo' and total_paginas > 1 %}
+  <div class="linha-botoes paginacao" style="justify-content: center; align-items: center; margin-top: 12px;">
+    {% if pag > 1 %}
+    <a class="btn btn-mini btn-secundario" href="{{ url_for('financeiro.lista', pagina=pag-1, por_pagina=por_pagina, de=de, ate=ate, tipo=tipo, categoria=categoria) }}">← Anterior</a>
+    {% endif %}
+    <span class="suave">Página {{ pag }} de {{ total_paginas }} · {{ total }} lançamento(s)</span>
+    {% if pag < total_paginas %}
+    <a class="btn btn-mini btn-secundario" href="{{ url_for('financeiro.lista', pagina=pag+1, por_pagina=por_pagina, de=de, ate=ate, tipo=tipo, categoria=categoria) }}">Próxima →</a>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="suave" style="text-align:center;">{{ total }} lançamento(s)</p>
+  {% endif %}
+  {% else %}
+  <p class="vazio">Nenhum lançamento no filtro atual.</p>
+  {% endif %}
+</div>
+
+<div class="modal-fundo" id="modal-previsao" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-previsao-titulo">
+    <h2 id="modal-previsao-titulo">Previsão encontrada</h2>
+    <p>Existe uma conta prevista com <strong>mesmo valor, data e tipo</strong>. Deseja efetivá-la com este lançamento?</p>
+    <div id="modal-previsao-lista"></div>
+    <div class="acoes-form">
+      <button class="btn btn-primario" type="button" id="modal-efetivar">Efetivar e lançar</button>
+      <button class="btn btn-secundario" type="button" id="modal-sem-vinculo">Lançar sem vincular</button>
+      <button class="btn btn-texto" type="button" id="modal-cancelar">Cancelar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var form = document.getElementById('form-lancamento');
+  if (!form) return;
+  var modal = document.getElementById('modal-previsao');
+  var lista = document.getElementById('modal-previsao-lista');
+  var hiddenPrev = document.getElementById('previsao_id');
+  var enviando = false;
+
+  function abrirModal(previsoes) {
+    lista.innerHTML = previsoes.map(function (p) {
+      return '<label class="linha-check"><input type="radio" name="prev-escolha" value="' +
+        p.id + '"' + (p === previsoes[0] ? ' checked' : '') + '> <span><strong>' +
+        p.data + '</strong> · ' + p.categoria + ' · ' + p.descricao +
+        ' <small>(' + p.origem + ')</small></span></label>';
+    }).join('');
+    modal.hidden = false;
+  }
+  function fecharModal() { modal.hidden = true; }
+  function escolha() {
+    var r = lista.querySelector('input[name="prev-escolha"]:checked');
+    return r ? r.value : '';
+  }
+
+  document.getElementById('modal-cancelar').addEventListener('click', function () {
+    enviando = false; fecharModal();
+  });
+  document.getElementById('modal-sem-vinculo').addEventListener('click', function () {
+    hiddenPrev.value = ''; enviando = true; fecharModal(); form.submit();
+  });
+  document.getElementById('modal-efetivar').addEventListener('click', function () {
+    hiddenPrev.value = escolha(); enviando = true; fecharModal(); form.submit();
+  });
+
+  form.addEventListener('submit', function (ev) {
+    if (enviando) { enviando = false; return; }
+    var tipo = document.getElementById('lanc-tipo').value;
+    var data = document.getElementById('lanc-data').value;
+    var valor = document.getElementById('lanc-valor').value;
+    if (!tipo || !data || !valor) return;
+    ev.preventDefault();
+    fetch('{{ url_for('financeiro.api_checar_previsao') }}?tipo=' + encodeURIComponent(tipo) +
+      '&data=' + encodeURIComponent(data) + '&valor=' + encodeURIComponent(valor))
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.previsoes && j.previsoes.length) abrirModal(j.previsoes);
+        else { enviando = true; form.submit(); }
+      })
+      .catch(function () { enviando = true; form.submit(); });
+  });
+})();
+</script>
+{% endblock %}

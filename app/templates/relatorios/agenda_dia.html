@@ -1,0 +1,39 @@
+{% extends "relatorios/base_relatorio.html" %}
+{% block titulo_relatorio %}Agenda do dia{% endblock %}
+{% block titulo_relatorio_full %}🗓️ Agenda do dia{% endblock %}
+{% block periodo_relatorio %}
+<form method="get" class="linha-filtros">
+  <label class="campo"><span>Dia</span><input type="date" name="dia" value="{{ dia.isoformat() }}"></label>
+  <button class="btn btn-secundario" type="submit">Ver</button>
+  <span class="suave">{{ data_br(dia.isoformat()) }}</span>
+</form>
+{% endblock %}
+
+{% block corpo_relatorio %}
+{% if linhas %}
+<div class="card">
+  <table class="tabela">
+    <thead><tr>
+      <th>Hora</th><th>Paciente</th><th>Telefone</th><th>Tipo</th>
+      <th>Profissional</th><th>Status</th><th class="tabular">Valor</th><th>Pago</th>
+    </tr></thead>
+    <tbody>
+    {% for a in linhas %}
+      <tr>
+        <td class="tabular">{{ fmt_hora(a['hora_inicio']) }}–{{ fmt_hora(a['hora_fim']) }}</td>
+        <td>{{ a['paciente_nome'] }}</td>
+        <td>{{ a['telefone'] or '—' }}</td>
+        <td>{{ a['tipo'] }}</td>
+        <td>{{ a['profissional'] or '—' }}</td>
+        <td><span class="badge badge-{{ a['status'] }}">{{ STATUS_LABELS[a['status']] }}</span></td>
+        <td class="tabular">{{ fmt_moeda(a['valor_centavos']) if a['valor_centavos'] else '—' }}</td>
+        <td>{{ '✔' if a['pago'] else '—' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p class="vazio">Nenhuma sessão neste dia.</p></div>
+{% endif %}
+{% endblock %}

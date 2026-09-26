@@ -1,0 +1,12 @@
+# Ambiente virtual
+.venv/
+
+# Dados locais (banco, anexos e backups ficam FORA do git por segurança/LGPD)
+data/
+backups/
+server.log
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
